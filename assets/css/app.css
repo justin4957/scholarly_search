@@ -103,3 +103,259 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Swiss Design - Typography */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+:root {
+  --swiss-yellow: #fad608;
+  --swiss-red: #e3001b;
+  --swiss-blue: #0066cc;
+  --swiss-black: #1a1a1a;
+  --swiss-white: #fefefe;
+  --swiss-gray: #f5f5f5;
+  --swiss-border: #e0e0e0;
+}
+
+body {
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* Swiss Design - Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: var(--swiss-border);
+  }
+  50% {
+    border-color: var(--swiss-yellow);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Swiss Design - Card Stack Effect */
+.paper-stack {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.paper-stack::before,
+.paper-stack::after {
+  content: '';
+  position: absolute;
+  width: 98%;
+  height: 100%;
+  background: white;
+  border: 1px solid var(--swiss-border);
+  border-radius: 2px;
+  z-index: -1;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.paper-stack::before {
+  top: 2px;
+  left: 2px;
+}
+
+.paper-stack::after {
+  top: 4px;
+  left: 4px;
+}
+
+.paper-stack:hover {
+  transform: translateY(-2px);
+}
+
+.paper-stack:hover::before {
+  top: 3px;
+  left: 3px;
+}
+
+.paper-stack:hover::after {
+  top: 6px;
+  left: 6px;
+}
+
+/* Swiss Grid Lines */
+.swiss-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--swiss-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--swiss-border) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Modern Search Input */
+.search-input {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Pane Headers with Swiss Color System */
+.pane-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.pane-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pane-header:hover::after {
+  left: 100%;
+}
+
+/* Typography Scale - Swiss Precision */
+.swiss-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.swiss-mono {
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  letter-spacing: -0.01em;
+}
+
+/* Loading States */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* Smooth Scrolling */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--swiss-border) transparent;
+}
+
+.smooth-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.smooth-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.smooth-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--swiss-border);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.smooth-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--swiss-yellow);
+}
+
+/* Result Cards */
+.result-card {
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  border-left: 3px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.result-card:hover {
+  border-left-color: var(--swiss-yellow);
+  transform: translateX(4px);
+}
+
+/* Staggered Animation */
+.result-card:nth-child(1) { animation-delay: 0.05s; }
+.result-card:nth-child(2) { animation-delay: 0.1s; }
+.result-card:nth-child(3) { animation-delay: 0.15s; }
+.result-card:nth-child(4) { animation-delay: 0.2s; }
+.result-card:nth-child(5) { animation-delay: 0.25s; }
+.result-card:nth-child(6) { animation-delay: 0.3s; }
+.result-card:nth-child(7) { animation-delay: 0.35s; }
+.result-card:nth-child(8) { animation-delay: 0.4s; }
+.result-card:nth-child(9) { animation-delay: 0.45s; }
+.result-card:nth-child(10) { animation-delay: 0.5s; }
+
+/* Button Interactions */
+.swiss-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.swiss-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.swiss-button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Accent Lines - Swiss Style */
+.accent-line {
+  position: relative;
+}
+
+.accent-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--swiss-yellow);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accent-line:hover::before {
+  transform: scaleY(1);
+}
