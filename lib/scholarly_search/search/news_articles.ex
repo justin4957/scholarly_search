@@ -62,7 +62,7 @@ defmodule ScholarlySearch.Search.NewsArticles do
   Fetches news articles from NewsAPI.
   Requires API key configuration.
   """
-  def fetch_from_newsapi(query, page) do
+  def fetch_from_newsapi(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to NewsAPI
     # url = "https://newsapi.org/v2/everything"
@@ -73,7 +73,7 @@ defmodule ScholarlySearch.Search.NewsArticles do
   @doc """
   Fetches news articles from Google News RSS feeds.
   """
-  def fetch_from_google_news(query, page) do
+  def fetch_from_google_news(_query, _page) do
     # Implementation would go here
     # Example: Parse Google News RSS feed
     # url = "https://news.google.com/rss/search?q=#{URI.encode(query)}"
@@ -83,7 +83,7 @@ defmodule ScholarlySearch.Search.NewsArticles do
   @doc """
   Fetches news articles from multiple RSS feeds.
   """
-  def fetch_from_rss_feeds(query, page) do
+  def fetch_from_rss_feeds(_query, _page) do
     # Implementation would go here
     # Example: Aggregate results from multiple RSS feeds
     []
