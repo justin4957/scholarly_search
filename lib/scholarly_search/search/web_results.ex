@@ -61,7 +61,7 @@ defmodule ScholarlySearch.Search.WebResults do
   Fetches web results from Google Custom Search API.
   Requires API key and Search Engine ID configuration.
   """
-  def fetch_from_google_custom_search(query, page) do
+  def fetch_from_google_custom_search(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Google Custom Search API
     # url = "https://www.googleapis.com/customsearch/v1"
@@ -73,7 +73,7 @@ defmodule ScholarlySearch.Search.WebResults do
   Fetches web results from Bing Search API.
   Requires API key configuration.
   """
-  def fetch_from_bing_search(query, page) do
+  def fetch_from_bing_search(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Bing Search API
     # url = "https://api.bing.microsoft.com/v7.0/search"
@@ -83,7 +83,7 @@ defmodule ScholarlySearch.Search.WebResults do
   @doc """
   Fetches web results from DuckDuckGo API.
   """
-  def fetch_from_duckduckgo(query, page) do
+  def fetch_from_duckduckgo(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to DuckDuckGo API
     # url = "https://api.duckduckgo.com/"
@@ -94,7 +94,7 @@ defmodule ScholarlySearch.Search.WebResults do
   Fetches web results from Brave Search API.
   Requires API key configuration.
   """
-  def fetch_from_brave_search(query, page) do
+  def fetch_from_brave_search(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Brave Search API
     # url = "https://api.search.brave.com/res/v1/web/search"

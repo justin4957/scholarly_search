@@ -62,7 +62,7 @@ defmodule ScholarlySearch.Search.UserContent do
   Fetches user content from Reddit API.
   Requires API key configuration.
   """
-  def fetch_from_reddit(query, page) do
+  def fetch_from_reddit(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Reddit API
     # url = "https://oauth.reddit.com/search"
@@ -73,7 +73,7 @@ defmodule ScholarlySearch.Search.UserContent do
   @doc """
   Fetches user content from Stack Exchange API.
   """
-  def fetch_from_stack_exchange(query, page) do
+  def fetch_from_stack_exchange(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Stack Exchange API
     # url = "https://api.stackexchange.com/2.3/search"
@@ -83,7 +83,7 @@ defmodule ScholarlySearch.Search.UserContent do
   @doc """
   Fetches user content from Hacker News API.
   """
-  def fetch_from_hacker_news(query, page) do
+  def fetch_from_hacker_news(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Hacker News Algolia API
     # url = "https://hn.algolia.com/api/v1/search"
@@ -93,7 +93,7 @@ defmodule ScholarlySearch.Search.UserContent do
   @doc """
   Fetches user content from Discourse forums.
   """
-  def fetch_from_discourse(query, page, forum_url) do
+  def fetch_from_discourse(_query, _page, _forum_url) do
     # Implementation would go here
     # Example: Make HTTP request to Discourse API
     # url = "#{forum_url}/search.json"

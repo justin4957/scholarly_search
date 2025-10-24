@@ -46,7 +46,7 @@ defmodule ScholarlySearch.Search.ScholarlyArticles do
   Fetches scholarly articles from Semantic Scholar API.
   Requires API key configuration.
   """
-  def fetch_from_semantic_scholar(query, page) do
+  def fetch_from_semantic_scholar(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to Semantic Scholar API
     # url = "https://api.semanticscholar.org/graph/v1/paper/search"
@@ -57,7 +57,7 @@ defmodule ScholarlySearch.Search.ScholarlyArticles do
   @doc """
   Fetches scholarly articles from CrossRef API.
   """
-  def fetch_from_crossref(query, page) do
+  def fetch_from_crossref(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to CrossRef API
     # url = "https://api.crossref.org/works"
@@ -67,7 +67,7 @@ defmodule ScholarlySearch.Search.ScholarlyArticles do
   @doc """
   Fetches scholarly articles from PubMed API.
   """
-  def fetch_from_pubmed(query, page) do
+  def fetch_from_pubmed(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to PubMed API
     # url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
@@ -77,7 +77,7 @@ defmodule ScholarlySearch.Search.ScholarlyArticles do
   @doc """
   Fetches scholarly articles from arXiv API.
   """
-  def fetch_from_arxiv(query, page) do
+  def fetch_from_arxiv(_query, _page) do
     # Implementation would go here
     # Example: Make HTTP request to arXiv API
     # url = "http://export.arxiv.org/api/query"
