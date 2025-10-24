@@ -38,16 +38,20 @@ lib/scholarly_search_web/
 
 Each search module (`ScholarlyArticles`, `NewsArticles`, `UserContent`, `WebResults`) is designed for easy integration with external APIs:
 
-- **Scholarly Articles**: Ready for integration with Semantic Scholar, CrossRef, PubMed, arXiv
+- **Scholarly Articles**: ✅ **Integrated with Semantic Scholar API** (CrossRef, PubMed, arXiv ready for integration)
 - **News Articles**: Ready for integration with NewsAPI, Google News, Reuters
 - **User Content**: Ready for integration with Reddit, Stack Exchange, Hacker News
 - **Web Results**: Ready for integration with Google Custom Search, Bing, DuckDuckGo
 
-Currently, the modules return mock data for demonstration purposes. To integrate real APIs:
+#### Semantic Scholar Integration
 
-1. Add API keys to `config/runtime.exs`
-2. Implement the `fetch_from_*` functions in each module
-3. Replace `generate_mock_results/2` calls with actual API calls
+The scholarly articles module now supports real API integration with Semantic Scholar. By default, it uses mock data for development, but you can enable the real API:
+
+1. Set the environment variable: `export USE_REAL_API=true`
+2. (Optional) Add API key for higher rate limits: `export SEMANTIC_SCHOLAR_API_KEY=your_key_here`
+3. The module automatically falls back to mock data if the API fails
+
+See the [API Configuration](#api-keys) section below for details.
 
 ## Getting Started
 
@@ -96,40 +100,56 @@ iex -S mix phx.server
 
 ### API Keys
 
-To integrate real search APIs, add your API keys to `config/runtime.exs`:
+#### Semantic Scholar API (Currently Integrated)
+
+The Semantic Scholar API is now integrated and can be enabled via environment variables:
+
+```bash
+# Enable real API (default: false, uses mock data)
+export USE_REAL_API=true
+
+# Optional: Add API key for higher rate limits
+# Free tier available without key
+# Get your key at: https://www.semanticscholar.org/product/api
+export SEMANTIC_SCHOLAR_API_KEY=your_key_here
+```
+
+**Rate Limits:**
+- **Without API key**: 100 requests per 5 minutes
+- **With API key**: Higher limits (see Semantic Scholar documentation)
+
+**Features:**
+- Automatic fallback to mock data on API failure
+- Comprehensive error handling and logging
+- Real-time scholarly article search with metadata (citations, authors, venue, year)
+
+#### Other APIs (Ready for Integration)
+
+To integrate additional search APIs in the future, you can add configuration to `config/runtime.exs`:
 
 ```elixir
 config :scholarly_search,
-  semantic_scholar_api_key: System.get_env("SEMANTIC_SCHOLAR_API_KEY"),
+  # News APIs
   newsapi_key: System.get_env("NEWSAPI_KEY"),
+
+  # Social/Forum APIs
   reddit_client_id: System.get_env("REDDIT_CLIENT_ID"),
   reddit_client_secret: System.get_env("REDDIT_CLIENT_SECRET"),
+
+  # Web Search APIs
   google_custom_search_key: System.get_env("GOOGLE_CUSTOM_SEARCH_KEY"),
   google_search_engine_id: System.get_env("GOOGLE_SEARCH_ENGINE_ID")
 ```
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+A `.env.example` file is provided. Copy it to `.env` and update with your actual values:
 
 ```bash
-# Scholarly APIs
-SEMANTIC_SCHOLAR_API_KEY=your_key_here
-CROSSREF_API_KEY=your_key_here
-
-# News APIs
-NEWSAPI_KEY=your_key_here
-
-# Social/Forum APIs
-REDDIT_CLIENT_ID=your_client_id
-REDDIT_CLIENT_SECRET=your_client_secret
-STACKOVERFLOW_KEY=your_key_here
-
-# Web Search APIs
-GOOGLE_CUSTOM_SEARCH_KEY=your_key_here
-GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
-BING_SEARCH_KEY=your_key_here
+cp .env.example .env
 ```
+
+**Note:** The `.env` file is in `.gitignore` and should never be committed to version control.
 
 ## Deployment
 
