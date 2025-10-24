@@ -29,7 +29,9 @@ defmodule ScholarlySearchWeb.SearchLive do
 
   @impl true
   def handle_event("toggle_theme", _params, socket) do
-    {:noreply, assign(socket, :dark_mode, !socket.assigns.dark_mode)}
+    new_dark_mode = !socket.assigns.dark_mode
+    IO.puts("🌓 Theme toggled! Dark mode: #{new_dark_mode}")
+    {:noreply, assign(socket, :dark_mode, new_dark_mode)}
   end
 
   @impl true
@@ -51,7 +53,9 @@ defmodule ScholarlySearchWeb.SearchLive do
 
   @impl true
   def handle_event("toggle_animations", _params, socket) do
-    {:noreply, assign(socket, :enable_animations, !socket.assigns.enable_animations)}
+    new_animations = !socket.assigns.enable_animations
+    IO.puts("✨ Animations toggled! Enabled: #{new_animations}")
+    {:noreply, assign(socket, :enable_animations, new_animations)}
   end
 
   @impl true
