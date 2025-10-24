@@ -16,21 +16,40 @@ defmodule ScholarlySearchWeb.SearchLive do
      |> assign(:news_page, 1)
      |> assign(:user_content_page, 1)
      |> assign(:web_results_page, 1)
-     |> assign(:searching, false)}
+     |> assign(:searching, false)
+     |> assign(:scholarly_loading, false)
+     |> assign(:news_loading, false)
+     |> assign(:user_content_loading, false)
+     |> assign(:web_results_loading, false)}
   end
 
   @impl true
   def handle_event("search", %{"query" => query}, socket) do
-    send(self(), {:perform_search, query})
+    # Clear previous results and set all panes to loading
+    socket =
+      socket
+      |> assign(:search_query, query)
+      |> assign(:searching, true)
+      |> assign(:scholarly_articles, [])
+      |> assign(:news_articles, [])
+      |> assign(:user_content, [])
+      |> assign(:web_results, [])
+      |> assign(:scholarly_page, 1)
+      |> assign(:news_page, 1)
+      |> assign(:user_content_page, 1)
+      |> assign(:web_results_page, 1)
+      |> assign(:scholarly_loading, true)
+      |> assign(:news_loading, true)
+      |> assign(:user_content_loading, true)
+      |> assign(:web_results_loading, true)
 
-    {:noreply,
-     socket
-     |> assign(:search_query, query)
-     |> assign(:searching, true)
-     |> assign(:scholarly_page, 1)
-     |> assign(:news_page, 1)
-     |> assign(:user_content_page, 1)
-     |> assign(:web_results_page, 1)}
+    # Trigger async searches for each pane
+    send(self(), {:search_scholarly, query})
+    send(self(), {:search_news, query})
+    send(self(), {:search_user_content, query})
+    send(self(), {:search_web, query})
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -78,19 +97,61 @@ defmodule ScholarlySearchWeb.SearchLive do
   end
 
   @impl true
-  def handle_info({:perform_search, query}, socket) do
+  def handle_info({:search_scholarly, query}, socket) do
     scholarly_articles = ScholarlyArticles.search(query, 1)
-    news_articles = NewsArticles.search(query, 1)
-    user_content = UserContent.search(query, 1)
-    web_results = WebResults.search(query, 1)
 
     {:noreply,
      socket
      |> assign(:scholarly_articles, scholarly_articles)
+     |> assign(:scholarly_loading, false)
+     |> check_all_loaded()}
+  end
+
+  @impl true
+  def handle_info({:search_news, query}, socket) do
+    news_articles = NewsArticles.search(query, 1)
+
+    {:noreply,
+     socket
      |> assign(:news_articles, news_articles)
+     |> assign(:news_loading, false)
+     |> check_all_loaded()}
+  end
+
+  @impl true
+  def handle_info({:search_user_content, query}, socket) do
+    user_content = UserContent.search(query, 1)
+
+    {:noreply,
+     socket
      |> assign(:user_content, user_content)
+     |> assign(:user_content_loading, false)
+     |> check_all_loaded()}
+  end
+
+  @impl true
+  def handle_info({:search_web, query}, socket) do
+    web_results = WebResults.search(query, 1)
+
+    {:noreply,
+     socket
      |> assign(:web_results, web_results)
-     |> assign(:searching, false)}
+     |> assign(:web_results_loading, false)
+     |> check_all_loaded()}
+  end
+
+  defp check_all_loaded(socket) do
+    all_loaded =
+      !socket.assigns.scholarly_loading &&
+        !socket.assigns.news_loading &&
+        !socket.assigns.user_content_loading &&
+        !socket.assigns.web_results_loading
+
+    if all_loaded do
+      assign(socket, :searching, false)
+    else
+      socket
+    end
   end
 
   @impl true
@@ -151,21 +212,25 @@ defmodule ScholarlySearchWeb.SearchLive do
               </div>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="scholarly-pane">
-              <%= if @scholarly_articles == [] and @search_query != "" and not @searching do %>
-                <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+              <%= if @scholarly_loading do %>
+                <.skeleton_loader />
               <% else %>
-                <%= for {article, index} <- Enum.with_index(@scholarly_articles) do %>
-                  <.paper_card article={article} index={index} color="scholarly" />
+                <%= if @scholarly_articles == [] and @search_query != "" do %>
+                  <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+                <% else %>
+                  <%= for {article, index} <- Enum.with_index(@scholarly_articles) do %>
+                    <.paper_card article={article} index={index} color="scholarly" />
+                  <% end %>
                 <% end %>
-              <% end %>
-              <%= if length(@scholarly_articles) > 0 do %>
-                <button
-                  phx-click="load_more"
-                  phx-value-pane="scholarly"
-                  class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
-                >
-                  Load More
-                </button>
+                <%= if length(@scholarly_articles) > 0 do %>
+                  <button
+                    phx-click="load_more"
+                    phx-value-pane="scholarly"
+                    class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
+                  >
+                    Load More
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>
@@ -179,21 +244,25 @@ defmodule ScholarlySearchWeb.SearchLive do
               </div>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="news-pane">
-              <%= if @news_articles == [] and @search_query != "" and not @searching do %>
-                <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+              <%= if @news_loading do %>
+                <.skeleton_loader />
               <% else %>
-                <%= for {article, index} <- Enum.with_index(@news_articles) do %>
-                  <.paper_card article={article} index={index} color="news" />
+                <%= if @news_articles == [] and @search_query != "" do %>
+                  <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+                <% else %>
+                  <%= for {article, index} <- Enum.with_index(@news_articles) do %>
+                    <.paper_card article={article} index={index} color="news" />
+                  <% end %>
                 <% end %>
-              <% end %>
-              <%= if length(@news_articles) > 0 do %>
-                <button
-                  phx-click="load_more"
-                  phx-value-pane="news"
-                  class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
-                >
-                  Load More
-                </button>
+                <%= if length(@news_articles) > 0 do %>
+                  <button
+                    phx-click="load_more"
+                    phx-value-pane="news"
+                    class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
+                  >
+                    Load More
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>
@@ -207,21 +276,25 @@ defmodule ScholarlySearchWeb.SearchLive do
               </div>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="user-content-pane">
-              <%= if @user_content == [] and @search_query != "" and not @searching do %>
-                <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+              <%= if @user_content_loading do %>
+                <.skeleton_loader />
               <% else %>
-                <%= for {content, index} <- Enum.with_index(@user_content) do %>
-                  <.paper_card article={content} index={index} color="forums" />
+                <%= if @user_content == [] and @search_query != "" do %>
+                  <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+                <% else %>
+                  <%= for {content, index} <- Enum.with_index(@user_content) do %>
+                    <.paper_card article={content} index={index} color="forums" />
+                  <% end %>
                 <% end %>
-              <% end %>
-              <%= if length(@user_content) > 0 do %>
-                <button
-                  phx-click="load_more"
-                  phx-value-pane="user"
-                  class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
-                >
-                  Load More
-                </button>
+                <%= if length(@user_content) > 0 do %>
+                  <button
+                    phx-click="load_more"
+                    phx-value-pane="user"
+                    class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
+                  >
+                    Load More
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>
@@ -235,26 +308,49 @@ defmodule ScholarlySearchWeb.SearchLive do
               </div>
             </div>
             <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="web-results-pane">
-              <%= if @web_results == [] and @search_query != "" and not @searching do %>
-                <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+              <%= if @web_results_loading do %>
+                <.skeleton_loader />
               <% else %>
-                <%= for {result, index} <- Enum.with_index(@web_results) do %>
-                  <.paper_card article={result} index={index} color="web" />
+                <%= if @web_results == [] and @search_query != "" do %>
+                  <p class="text-gray-400 text-center py-12 text-sm swiss-mono">No results found</p>
+                <% else %>
+                  <%= for {result, index} <- Enum.with_index(@web_results) do %>
+                    <.paper_card article={result} index={index} color="web" />
+                  <% end %>
                 <% end %>
-              <% end %>
-              <%= if length(@web_results) > 0 do %>
-                <button
-                  phx-click="load_more"
-                  phx-value-pane="web"
-                  class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
-                >
-                  Load More
-                </button>
+                <%= if length(@web_results) > 0 do %>
+                  <button
+                    phx-click="load_more"
+                    phx-value-pane="web"
+                    class="w-full py-2 mt-2 bg-white border border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-sm font-medium transition-all duration-200 swiss-mono"
+                  >
+                    Load More
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>
         </div>
       </div>
+    </div>
+    """
+  end
+
+  # Skeleton loader component
+  def skeleton_loader(assigns) do
+    ~H"""
+    <div class="space-y-3" role="status" aria-label="Loading">
+      <%= for _i <- 1..5 do %>
+        <div class="animate-pulse bg-white border-l-2 border-gray-200 p-4">
+          <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+          <div class="h-3 bg-gray-200 rounded w-1/2 mb-3"></div>
+          <div class="space-y-2">
+            <div class="h-3 bg-gray-200 rounded w-full"></div>
+            <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+          </div>
+        </div>
+      <% end %>
+      <span class="sr-only">Loading results...</span>
     </div>
     """
   end
