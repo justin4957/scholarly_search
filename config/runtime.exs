@@ -7,22 +7,34 @@ import Config
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
-# ## Semantic Scholar API Configuration
+# ## API Configuration
 #
-# Configure whether to use the real Semantic Scholar API or mock data.
-# API key is optional - Semantic Scholar offers a free tier without authentication,
-# but providing a key increases rate limits.
+# Configure whether to use real APIs or mock data for all search sources.
 #
-# To enable the API:
+# To enable real APIs:
 #   export USE_REAL_API=true
 #
-# To add an API key (optional):
-#   export SEMANTIC_SCHOLAR_API_KEY=your_key_here
+# API Keys (some optional, some required):
 #
-# Get your API key at: https://www.semanticscholar.org/product/api
+# 1. Semantic Scholar (optional - free tier without key)
+#    Get key at: https://www.semanticscholar.org/product/api
+#    export SEMANTIC_SCHOLAR_API_KEY=your_key_here
+#
+# 2. Google News RSS (no key needed - free)
+#    Uses public RSS feeds
+#
+# 3. Hacker News (no key needed - free)
+#    Uses Algolia API
+#
+# 4. Brave Search (required for web search)
+#    Get key at: https://brave.com/search/api/
+#    Free tier: 2,000 queries/month
+#    export BRAVE_API_KEY=your_key_here
+#
 config :scholarly_search,
   use_real_api: System.get_env("USE_REAL_API") == "true",
-  semantic_scholar_api_key: System.get_env("SEMANTIC_SCHOLAR_API_KEY")
+  semantic_scholar_api_key: System.get_env("SEMANTIC_SCHOLAR_API_KEY"),
+  brave_api_key: System.get_env("BRAVE_API_KEY")
 
 # ## Using releases
 #
