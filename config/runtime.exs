@@ -7,6 +7,23 @@ import Config
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
+# ## Semantic Scholar API Configuration
+#
+# Configure whether to use the real Semantic Scholar API or mock data.
+# API key is optional - Semantic Scholar offers a free tier without authentication,
+# but providing a key increases rate limits.
+#
+# To enable the API:
+#   export USE_REAL_API=true
+#
+# To add an API key (optional):
+#   export SEMANTIC_SCHOLAR_API_KEY=your_key_here
+#
+# Get your API key at: https://www.semanticscholar.org/product/api
+config :scholarly_search,
+  use_real_api: System.get_env("USE_REAL_API") == "true",
+  semantic_scholar_api_key: System.get_env("SEMANTIC_SCHOLAR_API_KEY")
+
 # ## Using releases
 #
 # If you use `mix release`, you need to explicitly enable the server
