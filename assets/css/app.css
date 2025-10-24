@@ -359,3 +359,62 @@ body {
 .accent-line:hover::before {
   transform: scaleY(1);
 }
+
+/* 3D Perspective View Mode */
+.perspective-container {
+  perspective: 1200px;
+  perspective-origin: center;
+}
+
+.perspective-pane-0 {
+  transform: rotateY(calc((0 - var(--active-pane, 0)) * 15deg))
+             translateZ(calc((0 - var(--active-pane, 0)) * -100px - 200px))
+             translateX(calc((0 - var(--active-pane, 0)) * 120px));
+}
+
+.perspective-pane-1 {
+  transform: rotateY(calc((1 - var(--active-pane, 0)) * 15deg))
+             translateZ(calc((1 - var(--active-pane, 0)) * -100px - 200px))
+             translateX(calc((1 - var(--active-pane, 0)) * 120px));
+}
+
+.perspective-pane-2 {
+  transform: rotateY(calc((2 - var(--active-pane, 0)) * 15deg))
+             translateZ(calc((2 - var(--active-pane, 0)) * -100px - 200px))
+             translateX(calc((2 - var(--active-pane, 0)) * 120px));
+}
+
+.perspective-pane-3 {
+  transform: rotateY(calc((3 - var(--active-pane, 0)) * 15deg))
+             translateZ(calc((3 - var(--active-pane, 0)) * -100px - 200px))
+             translateX(calc((3 - var(--active-pane, 0)) * 120px));
+}
+
+/* Atmospheric Floating Animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-40px) translateX(-5px);
+    opacity: 0.9;
+  }
+  75% {
+    transform: translateY(-20px) translateX(-10px);
+    opacity: 0.6;
+  }
+}
+
+.animate-float {
+  animation: float 20s infinite ease-in-out;
+}
+
+/* Radial Gradient for Atmospheric Effect */
+.bg-radial-gradient {
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 22, 40, 0.5) 100%);
+}
