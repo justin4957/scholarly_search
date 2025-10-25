@@ -24,7 +24,12 @@ defmodule ScholarlySearchWeb.SearchLive do
      |> assign(:dark_mode, false)
      |> assign(:view_mode, "grid")
      |> assign(:active_pane, 0)
-     |> assign(:enable_animations, true)}
+     |> assign(:enable_animations, true)
+     |> assign(:book_mode, false)
+     |> assign(:scholarly_page_index, 0)
+     |> assign(:news_page_index, 0)
+     |> assign(:user_page_index, 0)
+     |> assign(:web_page_index, 0)}
   end
 
   @impl true
@@ -52,6 +57,48 @@ defmodule ScholarlySearchWeb.SearchLive do
   @impl true
   def handle_event("toggle_animations", _params, socket) do
     {:noreply, assign(socket, :enable_animations, !socket.assigns.enable_animations)}
+  end
+
+  @impl true
+  def handle_event("toggle_book_mode", _params, socket) do
+    {:noreply, assign(socket, :book_mode, !socket.assigns.book_mode)}
+  end
+
+  @impl true
+  def handle_event("flip_page", %{"pane" => pane, "direction" => direction}, socket) do
+    delta = if direction == "next", do: 1, else: -1
+
+    socket =
+      case pane do
+        "scholarly" ->
+          current_index = socket.assigns.scholarly_page_index
+          max_pages = div(length(socket.assigns.scholarly_articles), 5)
+          new_index = max(0, min(current_index + delta, max_pages))
+          assign(socket, :scholarly_page_index, new_index)
+
+        "news" ->
+          current_index = socket.assigns.news_page_index
+          max_pages = div(length(socket.assigns.news_articles), 5)
+          new_index = max(0, min(current_index + delta, max_pages))
+          assign(socket, :news_page_index, new_index)
+
+        "user" ->
+          current_index = socket.assigns.user_page_index
+          max_pages = div(length(socket.assigns.user_content), 5)
+          new_index = max(0, min(current_index + delta, max_pages))
+          assign(socket, :user_page_index, new_index)
+
+        "web" ->
+          current_index = socket.assigns.web_page_index
+          max_pages = div(length(socket.assigns.web_results), 5)
+          new_index = max(0, min(current_index + delta, max_pages))
+          assign(socket, :web_page_index, new_index)
+
+        _ ->
+          socket
+      end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -224,6 +271,18 @@ defmodule ScholarlySearchWeb.SearchLive do
     |> then(fn classes ->
       "#{classes} perspective-pane-#{pane_index}"
     end)
+  end
+
+  # Helper to get paginated results for glass book mode
+  defp get_page_items(items, page_index) do
+    items
+    |> Enum.drop(page_index * 5)
+    |> Enum.take(5)
+  end
+
+  # Helper to calculate total pages
+  defp total_pages(items) do
+    max(1, div(length(items) + 4, 5))
   end
 
   @impl true
@@ -527,6 +586,46 @@ defmodule ScholarlySearchWeb.SearchLive do
               </button>
             </div>
             
+    <!-- Book Mode Toggle -->
+            <button
+              type="button"
+              phx-click="toggle_book_mode"
+              class={[
+                "p-2 rounded-lg transition-all duration-300 hover:scale-110",
+                if(@dark_mode,
+                  do:
+                    if(@book_mode,
+                      do: "bg-[#fad608] text-black",
+                      else:
+                        "bg-white/10 backdrop-blur-md text-gray-400 hover:bg-white/20 hover:text-white"
+                    ),
+                  else:
+                    if(@book_mode,
+                      do: "bg-[#fad608] text-black",
+                      else: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )
+                )
+              ]}
+              aria-label={if @book_mode, do: "Exit book mode", else: "Enter book mode"}
+              title={if @book_mode, do: "Exit book mode", else: "Enter book mode"}
+            >
+              <!-- Book Icon -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+            </button>
+            
     <!-- Animation Toggle (Accessibility) -->
             <button
               type="button"
@@ -561,385 +660,752 @@ defmodule ScholarlySearchWeb.SearchLive do
           </div>
         </div>
       </div>
-      
-    <!-- Four-Pane Grid Interface -->
-      <div class="max-w-[1600px] mx-auto p-4 relative">
-        <!-- Carousel Navigation Arrows -->
-        <%= if @view_mode in ["carousel", "perspective"] do %>
-          <button
-            phx-click="prev_pane"
-            class={[
-              "absolute left-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
-              if(@dark_mode,
-                do:
-                  "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
-                else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
-              )
-            ]}
-            aria-label="Previous category"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
 
-          <button
-            phx-click="next_pane"
-            class={[
-              "absolute right-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
-              if(@dark_mode,
-                do:
-                  "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
-                else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
-              )
-            ]}
-            aria-label="Next category"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          
-    <!-- Progress Indicators -->
-          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-            <%= for pane_index <- 0..3 do %>
-              <div class={[
-                "w-2 h-2 rounded-full transition-all duration-300",
-                if(@active_pane == pane_index,
-                  do: "bg-[#fad608] w-8",
-                  else:
-                    if(@dark_mode,
-                      do: "bg-white/30 hover:bg-white/50",
-                      else: "bg-gray-400 hover:bg-gray-600"
-                    )
-                )
-              ]}>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
-
-        <div class={[
-          "h-[calc(100vh-100px)] transition-all duration-500",
-          case @view_mode do
-            "grid" -> "grid grid-cols-2 gap-4"
-            "perspective" -> "perspective-container relative"
-            "carousel" -> "carousel-container relative flex items-center justify-center"
-            _ -> "grid grid-cols-2 gap-4"
-          end
-        ]}>
-          <!-- Scholarly Articles -->
+      <%= if @book_mode do %>
+        <!-- Glass Book Mode - Central Search with Surrounding Panes -->
+        <div class="glass-book-container max-w-[1800px] mx-auto">
+          <!-- Top Pane - Scholarly Articles -->
           <div
             class={[
-              "border overflow-hidden flex flex-col shadow-lg",
-              if(@dark_mode,
-                do: "bg-white/5 backdrop-blur-md border-white/10",
-                else: "bg-white border-gray-200"
-              ),
-              get_pane_classes(@view_mode, 0, @active_pane, @enable_animations)
+              "glass-book-top",
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
+              if(@enable_animations, do: "page-flip-vertical", else: "")
             ]}
+            phx-hook="GlassBookPane"
+            id="glass-book-scholarly"
             data-pane="scholarly"
           >
-            <div class={[
-              "px-4 py-2 border-b transition-all duration-300",
-              if(@dark_mode,
-                do: "border-white/10 bg-white/5",
-                else: "border-gray-200 bg-gray-50"
-              )
-            ]}>
-              <div class="flex items-center justify-between">
+            <div class="glass-book-page-content">
+              <div class="glass-book-page-header">
                 <h2 class={[
-                  "text-sm font-semibold swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  "text-sm font-bold swiss-mono tracking-wider",
+                  if(@dark_mode, do: "text-[#fad608]", else: "text-gray-900")
                 ]}>
                   SCHOLARLY
                 </h2>
                 <span class={[
-                  "text-xs swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  "text-xs swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
                 ]}>
-                  {length(@scholarly_articles)}
+                  {length(@scholarly_articles)} results
                 </span>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="scholarly-pane">
-              <%= if @scholarly_loading do %>
-                <.skeleton_loader dark_mode={@dark_mode} />
-              <% else %>
-                <%= if @scholarly_articles == [] and @search_query != "" do %>
-                  <p class={[
-                    "text-center py-12 text-sm swiss-mono transition-colors duration-300",
-                    if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
-                  ]}>
-                    No results found
-                  </p>
+              <div class="glass-book-page-body">
+                <%= if @scholarly_loading do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class={[
+                      "w-8 h-8 border-2 rounded-full animate-spin",
+                      if(@dark_mode,
+                        do: "border-gray-600 border-t-[#fad608]",
+                        else: "border-gray-300 border-t-[#fad608]"
+                      )
+                    ]}>
+                    </div>
+                  </div>
                 <% else %>
-                  <%= for {article, index} <- Enum.with_index(@scholarly_articles) do %>
-                    <.paper_card
-                      article={article}
-                      index={index}
-                      color="scholarly"
-                      dark_mode={@dark_mode}
-                    />
+                  <%= for article <- get_page_items(@scholarly_articles, @scholarly_page_index) do %>
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      class={[
+                        "block p-3 rounded-lg border-l-3 transition-all duration-200 hover:translate-x-1",
+                        if(@dark_mode,
+                          do: "bg-white/5 hover:bg-white/10 border-[#fad608]",
+                          else: "bg-white/50 hover:bg-white/80 border-[#fad608]"
+                        )
+                      ]}
+                    >
+                      <h3 class={[
+                        "text-xs font-semibold mb-1 line-clamp-2",
+                        if(@dark_mode, do: "text-white", else: "text-gray-900")
+                      ]}>
+                        {article.title}
+                      </h3>
+                      <p class={[
+                        "text-xs line-clamp-1",
+                        if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                      ]}>
+                        {article.authors}
+                      </p>
+                    </a>
                   <% end %>
                 <% end %>
-                <%= if length(@scholarly_articles) > 0 do %>
-                  <button
-                    phx-click="load_more"
-                    phx-value-pane="scholarly"
-                    class={[
-                      "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
-                      if(@dark_mode,
-                        do:
-                          "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
-                        else:
-                          "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
-                      )
-                    ]}
-                  >
-                    Load More
-                  </button>
-                <% end %>
-              <% end %>
+              </div>
+              <div class="glass-book-page-number">
+                <span class={if(@dark_mode, do: "text-white", else: "text-gray-900")}>
+                  {@scholarly_page_index + 1} / {total_pages(@scholarly_articles)}
+                </span>
+              </div>
+              <div class="scroll-hint">
+                Scroll to flip
+              </div>
             </div>
           </div>
           
-    <!-- News -->
+    <!-- Left Pane - News Articles -->
           <div
             class={[
-              "border overflow-hidden flex flex-col shadow-lg",
-              if(@dark_mode,
-                do: "bg-white/5 backdrop-blur-md border-white/10",
-                else: "bg-white border-gray-200"
-              ),
-              get_pane_classes(@view_mode, 1, @active_pane, @enable_animations)
+              "glass-book-left",
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
+              if(@enable_animations, do: "page-flip-horizontal", else: "")
             ]}
+            phx-hook="GlassBookPane"
+            id="glass-book-news"
             data-pane="news"
           >
-            <div class={[
-              "px-4 py-2 border-b transition-all duration-300",
-              if(@dark_mode,
-                do: "border-white/10 bg-white/5",
-                else: "border-gray-200 bg-gray-50"
-              )
-            ]}>
-              <div class="flex items-center justify-between">
+            <div class="glass-book-page-content">
+              <div class="glass-book-page-header">
                 <h2 class={[
-                  "text-sm font-semibold swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  "text-sm font-bold swiss-mono tracking-wider",
+                  if(@dark_mode, do: "text-[#e3001b]", else: "text-gray-900")
                 ]}>
                   NEWS
                 </h2>
                 <span class={[
-                  "text-xs swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  "text-xs swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
                 ]}>
-                  {length(@news_articles)}
+                  {length(@news_articles)} results
                 </span>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="news-pane">
-              <%= if @news_loading do %>
-                <.skeleton_loader dark_mode={@dark_mode} />
-              <% else %>
-                <%= if @news_articles == [] and @search_query != "" do %>
-                  <p class={[
-                    "text-center py-12 text-sm swiss-mono transition-colors duration-300",
-                    if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
-                  ]}>
-                    No results found
-                  </p>
+              <div class="glass-book-page-body">
+                <%= if @news_loading do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class={[
+                      "w-8 h-8 border-2 rounded-full animate-spin",
+                      if(@dark_mode,
+                        do: "border-gray-600 border-t-[#e3001b]",
+                        else: "border-gray-300 border-t-[#e3001b]"
+                      )
+                    ]}>
+                    </div>
+                  </div>
                 <% else %>
-                  <%= for {article, index} <- Enum.with_index(@news_articles) do %>
-                    <.paper_card article={article} index={index} color="news" dark_mode={@dark_mode} />
+                  <%= for article <- get_page_items(@news_articles, @news_page_index) do %>
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      class={[
+                        "block p-3 rounded-lg border-l-3 transition-all duration-200 hover:translate-x-1",
+                        if(@dark_mode,
+                          do: "bg-white/5 hover:bg-white/10 border-[#e3001b]",
+                          else: "bg-white/50 hover:bg-white/80 border-[#e3001b]"
+                        )
+                      ]}
+                    >
+                      <h3 class={[
+                        "text-xs font-semibold mb-1 line-clamp-2",
+                        if(@dark_mode, do: "text-white", else: "text-gray-900")
+                      ]}>
+                        {article.title}
+                      </h3>
+                      <p class={[
+                        "text-xs line-clamp-1",
+                        if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                      ]}>
+                        {article.source} · {article.date}
+                      </p>
+                    </a>
                   <% end %>
                 <% end %>
-                <%= if length(@news_articles) > 0 do %>
-                  <button
-                    phx-click="load_more"
-                    phx-value-pane="news"
-                    class={[
-                      "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
-                      if(@dark_mode,
-                        do:
-                          "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
-                        else:
-                          "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
-                      )
-                    ]}
-                  >
-                    Load More
-                  </button>
-                <% end %>
+              </div>
+              <div class="glass-book-page-number">
+                <span class={if(@dark_mode, do: "text-white", else: "text-gray-900")}>
+                  {@news_page_index + 1} / {total_pages(@news_articles)}
+                </span>
+              </div>
+              <div class="scroll-hint">
+                Scroll to flip
+              </div>
+            </div>
+          </div>
+          
+    <!-- Center - Main Search Info -->
+          <div class="glass-book-center">
+            <div class={[
+              "text-center p-8 rounded-2xl",
+              if(@dark_mode,
+                do: "bg-white/5 backdrop-blur-xl border border-white/10",
+                else: "bg-white/80 backdrop-blur-xl border border-gray-200"
+              )
+            ]}>
+              <%= if @search_query != "" do %>
+                <h2 class={[
+                  "text-2xl font-bold mb-2",
+                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                ]}>
+                  "{@search_query}"
+                </h2>
+                <p class={[
+                  "text-sm swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                ]}>
+                  Hover over a pane and scroll to flip through results
+                </p>
+              <% else %>
+                <h2 class={[
+                  "text-2xl font-bold mb-2",
+                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                ]}>
+                  Glass Book Mode
+                </h2>
+                <p class={[
+                  "text-sm swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                ]}>
+                  Search to explore results in an immersive book-like interface
+                </p>
               <% end %>
             </div>
           </div>
           
-    <!-- Forums -->
+    <!-- Right Pane - Forums/User Content -->
           <div
             class={[
-              "border overflow-hidden flex flex-col shadow-lg",
-              if(@dark_mode,
-                do: "bg-white/5 backdrop-blur-md border-white/10",
-                else: "bg-white border-gray-200"
-              ),
-              get_pane_classes(@view_mode, 2, @active_pane, @enable_animations)
+              "glass-book-right",
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
+              if(@enable_animations, do: "page-flip-horizontal", else: "")
             ]}
-            data-pane="forums"
+            phx-hook="GlassBookPane"
+            id="glass-book-forums"
+            data-pane="user"
           >
-            <div class={[
-              "px-4 py-2 border-b transition-all duration-300",
-              if(@dark_mode,
-                do: "border-white/10 bg-white/5",
-                else: "border-gray-200 bg-gray-50"
-              )
-            ]}>
-              <div class="flex items-center justify-between">
+            <div class="glass-book-page-content">
+              <div class="glass-book-page-header">
                 <h2 class={[
-                  "text-sm font-semibold swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  "text-sm font-bold swiss-mono tracking-wider",
+                  if(@dark_mode, do: "text-[#0066cc]", else: "text-gray-900")
                 ]}>
                   FORUMS
                 </h2>
                 <span class={[
-                  "text-xs swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  "text-xs swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
                 ]}>
-                  {length(@user_content)}
+                  {length(@user_content)} results
                 </span>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="user-content-pane">
-              <%= if @user_content_loading do %>
-                <.skeleton_loader dark_mode={@dark_mode} />
-              <% else %>
-                <%= if @user_content == [] and @search_query != "" do %>
-                  <p class={[
-                    "text-center py-12 text-sm swiss-mono transition-colors duration-300",
-                    if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
-                  ]}>
-                    No results found
-                  </p>
+              <div class="glass-book-page-body">
+                <%= if @user_content_loading do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class={[
+                      "w-8 h-8 border-2 rounded-full animate-spin",
+                      if(@dark_mode,
+                        do: "border-gray-600 border-t-[#0066cc]",
+                        else: "border-gray-300 border-t-[#0066cc]"
+                      )
+                    ]}>
+                    </div>
+                  </div>
                 <% else %>
-                  <%= for {content, index} <- Enum.with_index(@user_content) do %>
-                    <.paper_card
-                      article={content}
-                      index={index}
-                      color="forums"
-                      dark_mode={@dark_mode}
-                    />
+                  <%= for content <- get_page_items(@user_content, @user_page_index) do %>
+                    <a
+                      href={content.url}
+                      target="_blank"
+                      class={[
+                        "block p-3 rounded-lg border-l-3 transition-all duration-200 hover:translate-x-1",
+                        if(@dark_mode,
+                          do: "bg-white/5 hover:bg-white/10 border-[#0066cc]",
+                          else: "bg-white/50 hover:bg-white/80 border-[#0066cc]"
+                        )
+                      ]}
+                    >
+                      <h3 class={[
+                        "text-xs font-semibold mb-1 line-clamp-2",
+                        if(@dark_mode, do: "text-white", else: "text-gray-900")
+                      ]}>
+                        {content.title}
+                      </h3>
+                      <p class={[
+                        "text-xs line-clamp-1",
+                        if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                      ]}>
+                        {content.source}
+                      </p>
+                    </a>
                   <% end %>
                 <% end %>
-                <%= if length(@user_content) > 0 do %>
-                  <button
-                    phx-click="load_more"
-                    phx-value-pane="user"
-                    class={[
-                      "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
-                      if(@dark_mode,
-                        do:
-                          "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
-                        else:
-                          "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
-                      )
-                    ]}
-                  >
-                    Load More
-                  </button>
-                <% end %>
-              <% end %>
+              </div>
+              <div class="glass-book-page-number">
+                <span class={if(@dark_mode, do: "text-white", else: "text-gray-900")}>
+                  {@user_page_index + 1} / {total_pages(@user_content)}
+                </span>
+              </div>
+              <div class="scroll-hint">
+                Scroll to flip
+              </div>
             </div>
           </div>
           
-    <!-- Web -->
+    <!-- Bottom Pane - Web Results -->
           <div
             class={[
-              "border overflow-hidden flex flex-col shadow-lg",
-              if(@dark_mode,
-                do: "bg-white/5 backdrop-blur-md border-white/10",
-                else: "bg-white border-gray-200"
-              ),
-              get_pane_classes(@view_mode, 3, @active_pane, @enable_animations)
+              "glass-book-bottom",
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
+              if(@enable_animations, do: "page-flip-vertical", else: "")
             ]}
+            phx-hook="GlassBookPane"
+            id="glass-book-web"
             data-pane="web"
           >
-            <div class={[
-              "px-4 py-2 border-b transition-all duration-300",
-              if(@dark_mode,
-                do: "border-white/10 bg-white/5",
-                else: "border-gray-200 bg-gray-50"
-              )
-            ]}>
-              <div class="flex items-center justify-between">
+            <div class="glass-book-page-content">
+              <div class="glass-book-page-header">
                 <h2 class={[
-                  "text-sm font-semibold swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  "text-sm font-bold swiss-mono tracking-wider",
+                  if(@dark_mode, do: "text-[#888888]", else: "text-gray-900")
                 ]}>
                   WEB
                 </h2>
                 <span class={[
-                  "text-xs swiss-mono transition-colors duration-300",
-                  if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  "text-xs swiss-mono",
+                  if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
                 ]}>
-                  {length(@web_results)}
+                  {length(@web_results)} results
                 </span>
               </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="web-results-pane">
-              <%= if @web_results_loading do %>
-                <.skeleton_loader dark_mode={@dark_mode} />
-              <% else %>
-                <%= if @web_results == [] and @search_query != "" do %>
-                  <p class={[
-                    "text-center py-12 text-sm swiss-mono transition-colors duration-300",
-                    if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
-                  ]}>
-                    No results found
-                  </p>
+              <div class="glass-book-page-body">
+                <%= if @web_results_loading do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class={[
+                      "w-8 h-8 border-2 rounded-full animate-spin",
+                      if(@dark_mode,
+                        do: "border-gray-600 border-t-[#888888]",
+                        else: "border-gray-300 border-t-[#888888]"
+                      )
+                    ]}>
+                    </div>
+                  </div>
                 <% else %>
-                  <%= for {result, index} <- Enum.with_index(@web_results) do %>
-                    <.paper_card article={result} index={index} color="web" dark_mode={@dark_mode} />
+                  <%= for result <- get_page_items(@web_results, @web_page_index) do %>
+                    <a
+                      href={result.url}
+                      target="_blank"
+                      class={[
+                        "block p-3 rounded-lg border-l-3 transition-all duration-200 hover:translate-x-1",
+                        if(@dark_mode,
+                          do: "bg-white/5 hover:bg-white/10 border-[#888888]",
+                          else: "bg-white/50 hover:bg-white/80 border-[#888888]"
+                        )
+                      ]}
+                    >
+                      <h3 class={[
+                        "text-xs font-semibold mb-1 line-clamp-2",
+                        if(@dark_mode, do: "text-white", else: "text-gray-900")
+                      ]}>
+                        {result.title}
+                      </h3>
+                      <p class={[
+                        "text-xs line-clamp-1",
+                        if(@dark_mode, do: "text-gray-400", else: "text-gray-600")
+                      ]}>
+                        {result.url}
+                      </p>
+                    </a>
                   <% end %>
                 <% end %>
-                <%= if length(@web_results) > 0 do %>
-                  <button
-                    phx-click="load_more"
-                    phx-value-pane="web"
-                    class={[
-                      "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
-                      if(@dark_mode,
-                        do:
-                          "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
-                        else:
-                          "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
-                      )
-                    ]}
-                  >
-                    Load More
-                  </button>
-                <% end %>
-              <% end %>
+              </div>
+              <div class="glass-book-page-number">
+                <span class={if(@dark_mode, do: "text-white", else: "text-gray-900")}>
+                  {@web_page_index + 1} / {total_pages(@web_results)}
+                </span>
+              </div>
+              <div class="scroll-hint">
+                Scroll to flip
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      <% else %>
+        
+    <!-- Four-Pane Grid Interface -->
+        <div class="max-w-[1600px] mx-auto p-4 relative">
+          <!-- Carousel Navigation Arrows -->
+          <%= if @view_mode in ["carousel", "perspective"] do %>
+            <button
+              phx-click="prev_pane"
+              class={[
+                "absolute left-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
+                if(@dark_mode,
+                  do:
+                    "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
+                  else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
+                )
+              ]}
+              aria-label="Previous category"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <button
+              phx-click="next_pane"
+              class={[
+                "absolute right-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
+                if(@dark_mode,
+                  do:
+                    "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
+                  else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
+                )
+              ]}
+              aria-label="Next category"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+            
+    <!-- Progress Indicators -->
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+              <%= for pane_index <- 0..3 do %>
+                <div class={[
+                  "w-2 h-2 rounded-full transition-all duration-300",
+                  if(@active_pane == pane_index,
+                    do: "bg-[#fad608] w-8",
+                    else:
+                      if(@dark_mode,
+                        do: "bg-white/30 hover:bg-white/50",
+                        else: "bg-gray-400 hover:bg-gray-600"
+                      )
+                  )
+                ]}>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class={[
+            "h-[calc(100vh-100px)] transition-all duration-500",
+            case @view_mode do
+              "grid" -> "grid grid-cols-2 gap-4"
+              "perspective" -> "perspective-container relative"
+              "carousel" -> "carousel-container relative flex items-center justify-center"
+              _ -> "grid grid-cols-2 gap-4"
+            end
+          ]}>
+            <!-- Scholarly Articles -->
+            <div
+              class={[
+                "border overflow-hidden flex flex-col shadow-lg",
+                if(@dark_mode,
+                  do: "bg-white/5 backdrop-blur-md border-white/10",
+                  else: "bg-white border-gray-200"
+                ),
+                get_pane_classes(@view_mode, 0, @active_pane, @enable_animations)
+              ]}
+              data-pane="scholarly"
+            >
+              <div class={[
+                "px-4 py-2 border-b transition-all duration-300",
+                if(@dark_mode,
+                  do: "border-white/10 bg-white/5",
+                  else: "border-gray-200 bg-gray-50"
+                )
+              ]}>
+                <div class="flex items-center justify-between">
+                  <h2 class={[
+                    "text-sm font-semibold swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  ]}>
+                    SCHOLARLY
+                  </h2>
+                  <span class={[
+                    "text-xs swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  ]}>
+                    {length(@scholarly_articles)}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="scholarly-pane">
+                <%= if @scholarly_loading do %>
+                  <.skeleton_loader dark_mode={@dark_mode} />
+                <% else %>
+                  <%= if @scholarly_articles == [] and @search_query != "" do %>
+                    <p class={[
+                      "text-center py-12 text-sm swiss-mono transition-colors duration-300",
+                      if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
+                    ]}>
+                      No results found
+                    </p>
+                  <% else %>
+                    <%= for {article, index} <- Enum.with_index(@scholarly_articles) do %>
+                      <.paper_card
+                        article={article}
+                        index={index}
+                        color="scholarly"
+                        dark_mode={@dark_mode}
+                      />
+                    <% end %>
+                  <% end %>
+                  <%= if length(@scholarly_articles) > 0 do %>
+                    <button
+                      phx-click="load_more"
+                      phx-value-pane="scholarly"
+                      class={[
+                        "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
+                        if(@dark_mode,
+                          do:
+                            "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
+                          else:
+                            "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
+                        )
+                      ]}
+                    >
+                      Load More
+                    </button>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+            
+    <!-- News -->
+            <div
+              class={[
+                "border overflow-hidden flex flex-col shadow-lg",
+                if(@dark_mode,
+                  do: "bg-white/5 backdrop-blur-md border-white/10",
+                  else: "bg-white border-gray-200"
+                ),
+                get_pane_classes(@view_mode, 1, @active_pane, @enable_animations)
+              ]}
+              data-pane="news"
+            >
+              <div class={[
+                "px-4 py-2 border-b transition-all duration-300",
+                if(@dark_mode,
+                  do: "border-white/10 bg-white/5",
+                  else: "border-gray-200 bg-gray-50"
+                )
+              ]}>
+                <div class="flex items-center justify-between">
+                  <h2 class={[
+                    "text-sm font-semibold swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  ]}>
+                    NEWS
+                  </h2>
+                  <span class={[
+                    "text-xs swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  ]}>
+                    {length(@news_articles)}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="news-pane">
+                <%= if @news_loading do %>
+                  <.skeleton_loader dark_mode={@dark_mode} />
+                <% else %>
+                  <%= if @news_articles == [] and @search_query != "" do %>
+                    <p class={[
+                      "text-center py-12 text-sm swiss-mono transition-colors duration-300",
+                      if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
+                    ]}>
+                      No results found
+                    </p>
+                  <% else %>
+                    <%= for {article, index} <- Enum.with_index(@news_articles) do %>
+                      <.paper_card
+                        article={article}
+                        index={index}
+                        color="news"
+                        dark_mode={@dark_mode}
+                      />
+                    <% end %>
+                  <% end %>
+                  <%= if length(@news_articles) > 0 do %>
+                    <button
+                      phx-click="load_more"
+                      phx-value-pane="news"
+                      class={[
+                        "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
+                        if(@dark_mode,
+                          do:
+                            "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
+                          else:
+                            "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
+                        )
+                      ]}
+                    >
+                      Load More
+                    </button>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+            
+    <!-- Forums -->
+            <div
+              class={[
+                "border overflow-hidden flex flex-col shadow-lg",
+                if(@dark_mode,
+                  do: "bg-white/5 backdrop-blur-md border-white/10",
+                  else: "bg-white border-gray-200"
+                ),
+                get_pane_classes(@view_mode, 2, @active_pane, @enable_animations)
+              ]}
+              data-pane="forums"
+            >
+              <div class={[
+                "px-4 py-2 border-b transition-all duration-300",
+                if(@dark_mode,
+                  do: "border-white/10 bg-white/5",
+                  else: "border-gray-200 bg-gray-50"
+                )
+              ]}>
+                <div class="flex items-center justify-between">
+                  <h2 class={[
+                    "text-sm font-semibold swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  ]}>
+                    FORUMS
+                  </h2>
+                  <span class={[
+                    "text-xs swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  ]}>
+                    {length(@user_content)}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="user-content-pane">
+                <%= if @user_content_loading do %>
+                  <.skeleton_loader dark_mode={@dark_mode} />
+                <% else %>
+                  <%= if @user_content == [] and @search_query != "" do %>
+                    <p class={[
+                      "text-center py-12 text-sm swiss-mono transition-colors duration-300",
+                      if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
+                    ]}>
+                      No results found
+                    </p>
+                  <% else %>
+                    <%= for {content, index} <- Enum.with_index(@user_content) do %>
+                      <.paper_card
+                        article={content}
+                        index={index}
+                        color="forums"
+                        dark_mode={@dark_mode}
+                      />
+                    <% end %>
+                  <% end %>
+                  <%= if length(@user_content) > 0 do %>
+                    <button
+                      phx-click="load_more"
+                      phx-value-pane="user"
+                      class={[
+                        "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
+                        if(@dark_mode,
+                          do:
+                            "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
+                          else:
+                            "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
+                        )
+                      ]}
+                    >
+                      Load More
+                    </button>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+            
+    <!-- Web -->
+            <div
+              class={[
+                "border overflow-hidden flex flex-col shadow-lg",
+                if(@dark_mode,
+                  do: "bg-white/5 backdrop-blur-md border-white/10",
+                  else: "bg-white border-gray-200"
+                ),
+                get_pane_classes(@view_mode, 3, @active_pane, @enable_animations)
+              ]}
+              data-pane="web"
+            >
+              <div class={[
+                "px-4 py-2 border-b transition-all duration-300",
+                if(@dark_mode,
+                  do: "border-white/10 bg-white/5",
+                  else: "border-gray-200 bg-gray-50"
+                )
+              ]}>
+                <div class="flex items-center justify-between">
+                  <h2 class={[
+                    "text-sm font-semibold swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-white", else: "text-gray-900")
+                  ]}>
+                    WEB
+                  </h2>
+                  <span class={[
+                    "text-xs swiss-mono transition-colors duration-300",
+                    if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                  ]}>
+                    {length(@web_results)}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-1 overflow-y-auto p-4 space-y-3 smooth-scroll" id="web-results-pane">
+                <%= if @web_results_loading do %>
+                  <.skeleton_loader dark_mode={@dark_mode} />
+                <% else %>
+                  <%= if @web_results == [] and @search_query != "" do %>
+                    <p class={[
+                      "text-center py-12 text-sm swiss-mono transition-colors duration-300",
+                      if(@dark_mode, do: "text-gray-500", else: "text-gray-400")
+                    ]}>
+                      No results found
+                    </p>
+                  <% else %>
+                    <%= for {result, index} <- Enum.with_index(@web_results) do %>
+                      <.paper_card article={result} index={index} color="web" dark_mode={@dark_mode} />
+                    <% end %>
+                  <% end %>
+                  <%= if length(@web_results) > 0 do %>
+                    <button
+                      phx-click="load_more"
+                      phx-value-pane="web"
+                      class={[
+                        "w-full py-2 mt-2 border text-sm font-medium transition-all duration-200 swiss-mono",
+                        if(@dark_mode,
+                          do:
+                            "bg-white/5 border-white/20 hover:border-[#fad608] hover:bg-white/10 text-white",
+                          else:
+                            "bg-white border-gray-300 hover:border-gray-900 hover:bg-gray-50 text-gray-900"
+                        )
+                      ]}
+                    >
+                      Load More
+                    </button>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
