@@ -21,12 +21,37 @@ defmodule ScholarlySearchWeb.SearchLive do
      |> assign(:news_loading, false)
      |> assign(:user_content_loading, false)
      |> assign(:web_results_loading, false)
-     |> assign(:dark_mode, false)}
+     |> assign(:dark_mode, false)
+     |> assign(:view_mode, "grid")
+     |> assign(:active_pane, 0)
+     |> assign(:enable_animations, true)}
   end
 
   @impl true
   def handle_event("toggle_theme", _params, socket) do
     {:noreply, assign(socket, :dark_mode, !socket.assigns.dark_mode)}
+  end
+
+  @impl true
+  def handle_event("change_view_mode", %{"mode" => mode}, socket) do
+    {:noreply, assign(socket, :view_mode, mode)}
+  end
+
+  @impl true
+  def handle_event("next_pane", _params, socket) do
+    next_pane = rem(socket.assigns.active_pane + 1, 4)
+    {:noreply, assign(socket, :active_pane, next_pane)}
+  end
+
+  @impl true
+  def handle_event("prev_pane", _params, socket) do
+    prev_pane = rem(socket.assigns.active_pane - 1 + 4, 4)
+    {:noreply, assign(socket, :active_pane, prev_pane)}
+  end
+
+  @impl true
+  def handle_event("toggle_animations", _params, socket) do
+    {:noreply, assign(socket, :enable_animations, !socket.assigns.enable_animations)}
   end
 
   @impl true
@@ -160,16 +185,67 @@ defmodule ScholarlySearchWeb.SearchLive do
     end
   end
 
+  # Helper function to generate pane-specific classes based on view mode
+  defp get_pane_classes("grid", _pane_index, _active_pane, _animations_enabled) do
+    "transition-all duration-500"
+  end
+
+  defp get_pane_classes("carousel", pane_index, active_pane, animations_enabled) do
+    transition = if animations_enabled, do: "transition-all duration-500", else: ""
+
+    if pane_index == active_pane do
+      "#{transition} absolute inset-0 opacity-100 scale-100 z-20"
+    else
+      "#{transition} absolute inset-0 opacity-0 scale-95 pointer-events-none z-10"
+    end
+  end
+
+  defp get_pane_classes("perspective", pane_index, active_pane, animations_enabled) do
+    transition = if animations_enabled, do: "transition-all duration-700", else: ""
+
+    # Calculate rotation and z-position based on pane index and active pane
+    offset = pane_index - active_pane
+    opacity = if abs(offset) > 1, do: "opacity-30", else: "opacity-100"
+    z_index = 20 - abs(offset)
+
+    "#{transition} absolute inset-0 #{opacity} z-#{z_index}"
+    |> String.trim()
+    |> then(fn classes ->
+      "#{classes} perspective-pane-#{pane_index}"
+    end)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
     <div class={[
-      "min-h-screen transition-colors duration-300",
+      "min-h-screen transition-colors duration-300 relative overflow-hidden",
       if(@dark_mode,
         do: "bg-gradient-to-br from-[#0a1628] via-[#1a2942] to-[#0a1628]",
         else: "bg-white"
       )
     ]}>
+      <!-- Atmospheric Background Effects -->
+      <%= if @dark_mode and @enable_animations do %>
+        <!-- Animated Particles -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+          <%= for i <- 1..30 do %>
+            <div
+              class="absolute w-1 h-1 bg-white/40 rounded-full animate-float"
+              style={"
+                left: #{rem(i * 37, 100)}%;
+                top: #{rem(i * 53, 100)}%;
+                animation-delay: #{rem(i * 200, 3000)}ms;
+                animation-duration: #{15000 + rem(i * 500, 10000)}ms;
+              "}
+            >
+            </div>
+          <% end %>
+        </div>
+        <!-- Radial Gradient Overlay -->
+        <div class="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-[#0a1628]/50 pointer-events-none">
+        </div>
+      <% end %>
       <!-- Minimal Header -->
       <div class={[
         "sticky top-0 z-20 backdrop-blur-sm border-b transition-colors duration-300",
@@ -285,21 +361,216 @@ defmodule ScholarlySearchWeb.SearchLive do
                 </svg>
               <% end %>
             </button>
+            
+    <!-- View Mode Selector -->
+            <div class={[
+              "flex gap-1 p-1 rounded-lg transition-all duration-300",
+              if(@dark_mode,
+                do: "bg-white/10 backdrop-blur-md",
+                else: "bg-gray-100"
+              )
+            ]}>
+              <button
+                type="button"
+                phx-click="change_view_mode"
+                phx-value-mode="grid"
+                class={[
+                  "px-3 py-1 text-xs font-medium rounded transition-all duration-200",
+                  if(@view_mode == "grid",
+                    do:
+                      if(@dark_mode,
+                        do: "bg-[#fad608] text-black",
+                        else: "bg-white text-gray-900 shadow-sm"
+                      ),
+                    else:
+                      if(@dark_mode,
+                        do: "text-gray-400 hover:text-white",
+                        else: "text-gray-600 hover:text-gray-900"
+                      )
+                  )
+                ]}
+                aria-label="Grid view"
+              >
+                Grid
+              </button>
+              <button
+                type="button"
+                phx-click="change_view_mode"
+                phx-value-mode="perspective"
+                class={[
+                  "px-3 py-1 text-xs font-medium rounded transition-all duration-200",
+                  if(@view_mode == "perspective",
+                    do:
+                      if(@dark_mode,
+                        do: "bg-[#fad608] text-black",
+                        else: "bg-white text-gray-900 shadow-sm"
+                      ),
+                    else:
+                      if(@dark_mode,
+                        do: "text-gray-400 hover:text-white",
+                        else: "text-gray-600 hover:text-gray-900"
+                      )
+                  )
+                ]}
+                aria-label="Perspective view"
+              >
+                3D
+              </button>
+              <button
+                type="button"
+                phx-click="change_view_mode"
+                phx-value-mode="carousel"
+                class={[
+                  "px-3 py-1 text-xs font-medium rounded transition-all duration-200",
+                  if(@view_mode == "carousel",
+                    do:
+                      if(@dark_mode,
+                        do: "bg-[#fad608] text-black",
+                        else: "bg-white text-gray-900 shadow-sm"
+                      ),
+                    else:
+                      if(@dark_mode,
+                        do: "text-gray-400 hover:text-white",
+                        else: "text-gray-600 hover:text-gray-900"
+                      )
+                  )
+                ]}
+                aria-label="Carousel view"
+              >
+                Carousel
+              </button>
+            </div>
+            
+    <!-- Animation Toggle (Accessibility) -->
+            <button
+              type="button"
+              phx-click="toggle_animations"
+              class={[
+                "p-2 rounded-lg transition-all duration-300",
+                if(@dark_mode,
+                  do: "bg-white/10 backdrop-blur-md text-gray-400 hover:bg-white/20 hover:text-white",
+                  else: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                ),
+                if(!@enable_animations, do: "opacity-50")
+              ]}
+              aria-label={if @enable_animations, do: "Disable animations", else: "Enable animations"}
+              title={if @enable_animations, do: "Disable animations", else: "Enable animations"}
+            >
+              <!-- Sparkles Icon for animations -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
       
     <!-- Four-Pane Grid Interface -->
-      <div class="max-w-[1600px] mx-auto p-4">
-        <div class="grid grid-cols-2 gap-4 h-[calc(100vh-100px)]">
+      <div class="max-w-[1600px] mx-auto p-4 relative">
+        <!-- Carousel Navigation Arrows -->
+        <%= if @view_mode in ["carousel", "perspective"] do %>
+          <button
+            phx-click="prev_pane"
+            class={[
+              "absolute left-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
+              if(@dark_mode,
+                do:
+                  "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
+                else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
+              )
+            ]}
+            aria-label="Previous category"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <button
+            phx-click="next_pane"
+            class={[
+              "absolute right-0 top-1/2 -translate-y-1/2 z-30 p-4 transition-all duration-300 hover:scale-110",
+              if(@dark_mode,
+                do:
+                  "bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20",
+                else: "bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-lg"
+              )
+            ]}
+            aria-label="Next category"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          
+    <!-- Progress Indicators -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+            <%= for pane_index <- 0..3 do %>
+              <div class={[
+                "w-2 h-2 rounded-full transition-all duration-300",
+                if(@active_pane == pane_index,
+                  do: "bg-[#fad608] w-8",
+                  else:
+                    if(@dark_mode,
+                      do: "bg-white/30 hover:bg-white/50",
+                      else: "bg-gray-400 hover:bg-gray-600"
+                    )
+                )
+              ]}>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class={[
+          "h-[calc(100vh-100px)] transition-all duration-500",
+          case @view_mode do
+            "grid" -> "grid grid-cols-2 gap-4"
+            "perspective" -> "perspective-container relative"
+            "carousel" -> "carousel-container relative flex items-center justify-center"
+            _ -> "grid grid-cols-2 gap-4"
+          end
+        ]}>
           <!-- Scholarly Articles -->
-          <div class={[
-            "border overflow-hidden flex flex-col transition-all duration-300 shadow-lg",
-            if(@dark_mode,
-              do: "bg-white/5 backdrop-blur-md border-white/10",
-              else: "bg-white border-gray-200"
-            )
-          ]}>
+          <div
+            class={[
+              "border overflow-hidden flex flex-col shadow-lg",
+              if(@dark_mode,
+                do: "bg-white/5 backdrop-blur-md border-white/10",
+                else: "bg-white border-gray-200"
+              ),
+              get_pane_classes(@view_mode, 0, @active_pane, @enable_animations)
+            ]}
+            data-pane="scholarly"
+          >
             <div class={[
               "px-4 py-2 border-b transition-all duration-300",
               if(@dark_mode,
@@ -365,13 +636,17 @@ defmodule ScholarlySearchWeb.SearchLive do
           </div>
           
     <!-- News -->
-          <div class={[
-            "border overflow-hidden flex flex-col transition-all duration-300 shadow-lg",
-            if(@dark_mode,
-              do: "bg-white/5 backdrop-blur-md border-white/10",
-              else: "bg-white border-gray-200"
-            )
-          ]}>
+          <div
+            class={[
+              "border overflow-hidden flex flex-col shadow-lg",
+              if(@dark_mode,
+                do: "bg-white/5 backdrop-blur-md border-white/10",
+                else: "bg-white border-gray-200"
+              ),
+              get_pane_classes(@view_mode, 1, @active_pane, @enable_animations)
+            ]}
+            data-pane="news"
+          >
             <div class={[
               "px-4 py-2 border-b transition-all duration-300",
               if(@dark_mode,
@@ -432,13 +707,17 @@ defmodule ScholarlySearchWeb.SearchLive do
           </div>
           
     <!-- Forums -->
-          <div class={[
-            "border overflow-hidden flex flex-col transition-all duration-300 shadow-lg",
-            if(@dark_mode,
-              do: "bg-white/5 backdrop-blur-md border-white/10",
-              else: "bg-white border-gray-200"
-            )
-          ]}>
+          <div
+            class={[
+              "border overflow-hidden flex flex-col shadow-lg",
+              if(@dark_mode,
+                do: "bg-white/5 backdrop-blur-md border-white/10",
+                else: "bg-white border-gray-200"
+              ),
+              get_pane_classes(@view_mode, 2, @active_pane, @enable_animations)
+            ]}
+            data-pane="forums"
+          >
             <div class={[
               "px-4 py-2 border-b transition-all duration-300",
               if(@dark_mode,
@@ -504,13 +783,17 @@ defmodule ScholarlySearchWeb.SearchLive do
           </div>
           
     <!-- Web -->
-          <div class={[
-            "border overflow-hidden flex flex-col transition-all duration-300 shadow-lg",
-            if(@dark_mode,
-              do: "bg-white/5 backdrop-blur-md border-white/10",
-              else: "bg-white border-gray-200"
-            )
-          ]}>
+          <div
+            class={[
+              "border overflow-hidden flex flex-col shadow-lg",
+              if(@dark_mode,
+                do: "bg-white/5 backdrop-blur-md border-white/10",
+                else: "bg-white border-gray-200"
+              ),
+              get_pane_classes(@view_mode, 3, @active_pane, @enable_animations)
+            ]}
+            data-pane="web"
+          >
             <div class={[
               "px-4 py-2 border-b transition-all duration-300",
               if(@dark_mode,
