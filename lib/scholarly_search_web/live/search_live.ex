@@ -55,6 +55,17 @@ defmodule ScholarlySearchWeb.SearchLive do
   end
 
   @impl true
+  def handle_event("clear_search", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:search_query, "")
+     |> assign(:scholarly_articles, [])
+     |> assign(:news_articles, [])
+     |> assign(:user_content, [])
+     |> assign(:web_results, [])}
+  end
+
+  @impl true
   def handle_event("search", %{"query" => query}, socket) do
     # Clear previous results and set all panes to loading
     socket =
@@ -268,27 +279,88 @@ defmodule ScholarlySearchWeb.SearchLive do
             </div>
             
     <!-- Search Form -->
-            <form phx-submit="search" class="flex-1 flex gap-2">
-              <div class="flex-1 relative">
+            <form
+              phx-submit="search"
+              class="flex-1 flex gap-2"
+              phx-hook="SearchShortcut"
+              id="search-form"
+            >
+              <div class="flex-1 relative group">
+                <!-- Search Icon -->
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class={[
+                      "h-5 w-5 transition-colors duration-200",
+                      if(@dark_mode, do: "text-gray-400", else: "text-gray-500")
+                    ]}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
                 <input
                   type="text"
                   name="query"
                   value={@search_query}
                   placeholder="Search across scholarly articles, news, forums, and web..."
+                  id="search-input"
                   class={[
-                    "search-input w-full px-4 py-2 text-sm border focus:outline-none transition-all duration-200",
+                    "search-input w-full pl-12 pr-20 py-3 text-sm rounded-full border focus:outline-none transition-all duration-300",
                     if(@dark_mode,
                       do:
-                        "bg-white/10 backdrop-blur-md border-white/20 text-white placeholder-gray-400 focus:border-[#fad608] focus:bg-white/15",
-                      else: "bg-white border-gray-300 text-gray-900 focus:border-gray-900"
+                        "bg-white/10 backdrop-blur-md border-white/20 text-white placeholder-gray-400 focus:border-[#fad608] focus:bg-white/15 focus:shadow-[0_0_0_3px_rgba(250,214,8,0.1),0_8px_32px_rgba(0,0,0,0.15)]",
+                      else:
+                        "bg-white border-gray-300 text-gray-900 focus:border-[#fad608] focus:shadow-[0_0_0_3px_rgba(250,214,8,0.1),0_4px_12px_rgba(0,0,0,0.08)]"
                     )
                   ]}
                   autofocus
                 />
+                
+    <!-- Clear Button -->
+                <%= if @search_query != "" and !@searching do %>
+                  <button
+                    type="button"
+                    phx-click="clear_search"
+                    class={[
+                      "absolute right-12 top-1/2 -translate-y-1/2 p-1 rounded-full transition-all duration-200 hover:scale-110",
+                      if(@dark_mode,
+                        do: "text-gray-400 hover:text-white hover:bg-white/10",
+                        else: "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                      )
+                    ]}
+                    aria-label="Clear search"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                <% end %>
+                
+    <!-- Loading Spinner -->
                 <%= if @searching do %>
-                  <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div class="absolute right-12 top-1/2 -translate-y-1/2">
                     <div class={[
-                      "w-4 h-4 border-2 rounded-full animate-spin",
+                      "w-5 h-5 border-2 rounded-full animate-spin",
                       if(@dark_mode,
                         do: "border-gray-600 border-t-[#fad608]",
                         else: "border-gray-300 border-t-[#fad608]"
@@ -297,20 +369,34 @@ defmodule ScholarlySearchWeb.SearchLive do
                     </div>
                   </div>
                 <% end %>
+                
+    <!-- Keyboard Shortcut Hint -->
+                <%= if @search_query == "" and !@searching do %>
+                  <div class={[
+                    "absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-xs font-mono opacity-50 transition-opacity duration-200 group-focus-within:opacity-0 pointer-events-none",
+                    if(@dark_mode,
+                      do: "bg-white/10 text-gray-400 border border-white/20",
+                      else: "bg-gray-100 text-gray-600 border border-gray-300"
+                    )
+                  ]}>
+                    /
+                  </div>
+                <% end %>
               </div>
               <button
                 type="submit"
                 class={[
-                  "swiss-button px-6 py-2 text-sm font-semibold border transition-all duration-300 disabled:opacity-50",
+                  "swiss-button px-8 py-3 text-sm font-semibold border rounded-full transition-all duration-300 disabled:opacity-50 hover:scale-105",
                   if(@dark_mode,
                     do:
-                      "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-[#fad608] hover:text-black hover:border-[#fad608]",
-                    else: "bg-gray-900 text-white border-gray-900 hover:bg-[#fad608] hover:text-black"
+                      "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-[#fad608] hover:text-black hover:border-[#fad608] hover:shadow-[0_0_20px_rgba(250,214,8,0.3)]",
+                    else:
+                      "bg-gray-900 text-white border-gray-900 hover:bg-[#fad608] hover:text-black hover:shadow-[0_4px_12px_rgba(250,214,8,0.3)]"
                   )
                 ]}
                 disabled={@searching}
               >
-                {if @searching, do: "Searching", else: "Search"}
+                {if @searching, do: "Searching...", else: "Search"}
               </button>
             </form>
             
