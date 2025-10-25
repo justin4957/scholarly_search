@@ -50,6 +50,45 @@ Hooks.SearchShortcut = {
   }
 }
 
+// Glass Book Page Flip Hook - handles scroll-based page turning
+Hooks.GlassBookPane = {
+  mounted() {
+    const pane = this.el
+    const paneName = pane.dataset.pane
+    let scrollAccumulator = 0
+    const scrollThreshold = 100 // pixels to scroll before flipping page
+
+    this.handleWheel = (e) => {
+      // Only handle if mouse is hovering over this pane
+      if (!pane.matches(':hover')) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      scrollAccumulator += e.deltaY
+
+      // Flip forward
+      if (scrollAccumulator > scrollThreshold) {
+        this.pushEvent("flip_page", { pane: paneName, direction: "next" })
+        scrollAccumulator = 0
+      }
+      // Flip backward
+      else if (scrollAccumulator < -scrollThreshold) {
+        this.pushEvent("flip_page", { pane: paneName, direction: "prev" })
+        scrollAccumulator = 0
+      }
+    }
+
+    pane.addEventListener("wheel", this.handleWheel, { passive: false })
+  },
+
+  destroyed() {
+    this.el.removeEventListener("wheel", this.handleWheel)
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
