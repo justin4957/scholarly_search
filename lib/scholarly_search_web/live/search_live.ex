@@ -668,8 +668,7 @@ defmodule ScholarlySearchWeb.SearchLive do
           <div
             class={[
               "glass-book-top",
-              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
-              if(@enable_animations, do: "page-flip-vertical", else: "")
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light")
             ]}
             phx-hook="GlassBookPane"
             id="glass-book-scholarly"
@@ -746,8 +745,7 @@ defmodule ScholarlySearchWeb.SearchLive do
           <div
             class={[
               "glass-book-left",
-              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
-              if(@enable_animations, do: "page-flip-horizontal", else: "")
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light")
             ]}
             phx-hook="GlassBookPane"
             id="glass-book-news"
@@ -863,8 +861,7 @@ defmodule ScholarlySearchWeb.SearchLive do
           <div
             class={[
               "glass-book-right",
-              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
-              if(@enable_animations, do: "page-flip-horizontal", else: "")
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light")
             ]}
             phx-hook="GlassBookPane"
             id="glass-book-forums"
@@ -941,8 +938,7 @@ defmodule ScholarlySearchWeb.SearchLive do
           <div
             class={[
               "glass-book-bottom",
-              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light"),
-              if(@enable_animations, do: "page-flip-vertical", else: "")
+              if(@dark_mode, do: "glass-book-page", else: "glass-book-page-light")
             ]}
             phx-hook="GlassBookPane"
             id="glass-book-web"
