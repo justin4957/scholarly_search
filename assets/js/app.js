@@ -25,11 +25,36 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/scholarly_search"
 import topbar from "../vendor/topbar"
 
+// Custom Hooks
+const Hooks = {}
+
+// Search shortcut hook - press "/" to focus search input
+Hooks.SearchShortcut = {
+  mounted() {
+    this.handleKeyDown = (e) => {
+      // Check if "/" key is pressed and not in an input/textarea
+      if (e.key === "/" && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault()
+        const searchInput = document.getElementById('search-input')
+        if (searchInput) {
+          searchInput.focus()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", this.handleKeyDown)
+  },
+
+  destroyed() {
+    window.removeEventListener("keydown", this.handleKeyDown)
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ...Hooks},
 })
 
 // Show progress bar on live navigation and form submits
