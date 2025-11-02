@@ -50,6 +50,74 @@ Hooks.SearchShortcut = {
   }
 }
 
+// Glass Book Page Flip Hook - handles scroll-based page turning
+Hooks.GlassBookPane = {
+  mounted() {
+    const pane = this.el
+    const paneName = pane.dataset.pane
+    let scrollAccumulator = 0
+    const scrollThreshold = 100 // pixels to scroll before flipping page
+
+    console.log(`[GlassBookPane] Mounted hook for pane: ${paneName}`)
+
+    this.handleWheel = (e) => {
+      // Only handle if mouse is hovering over this pane
+      if (!pane.matches(':hover')) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      scrollAccumulator += e.deltaY
+      console.log(`[GlassBookPane] Scroll accumulator for ${paneName}: ${scrollAccumulator}`)
+
+      // Flip forward
+      if (scrollAccumulator > scrollThreshold) {
+        console.log(`[GlassBookPane] Flipping ${paneName} FORWARD`)
+        this.triggerFlipAnimation(pane)
+        this.pushEvent("flip_page", { pane: paneName, direction: "next" })
+        scrollAccumulator = 0
+      }
+      // Flip backward
+      else if (scrollAccumulator < -scrollThreshold) {
+        console.log(`[GlassBookPane] Flipping ${paneName} BACKWARD`)
+        this.triggerFlipAnimation(pane)
+        this.pushEvent("flip_page", { pane: paneName, direction: "prev" })
+        scrollAccumulator = 0
+      }
+    }
+
+    pane.addEventListener("wheel", this.handleWheel, { passive: false })
+  },
+
+  triggerFlipAnimation(pane) {
+    // Determine animation direction based on pane position
+    const isTopOrBottom = pane.classList.contains('glass-book-top') || pane.classList.contains('glass-book-bottom')
+    const animationClass = isTopOrBottom ? 'page-flip-vertical' : 'page-flip-horizontal'
+
+    // Remove animation class if it exists
+    pane.classList.remove('page-flip-vertical', 'page-flip-horizontal')
+
+    // Force reflow to restart animation
+    void pane.offsetWidth
+
+    // Add animation class
+    pane.classList.add(animationClass)
+
+    // Remove animation class after animation completes
+    setTimeout(() => {
+      pane.classList.remove(animationClass)
+    }, 600) // Match animation duration in CSS
+  },
+
+  destroyed() {
+    if (this.handleWheel) {
+      this.el.removeEventListener("wheel", this.handleWheel)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
